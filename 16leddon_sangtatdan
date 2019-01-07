@@ -1,0 +1,31 @@
+#INCLUDE <16F887.H>
+#FUSES NOWDT, PUT, HS, NOPROTECT, NOLVP
+#USE DELAY(CLOCK=20M)
+UNSIGNED INT16 I,J,Y; //16 led nen dung 16bit
+VOID MAIN()
+{
+   SET_TRIS_D(0X00); //khoi tao cac port
+   SET_TRIS_C(0X00);
+   WHILE(TRUE) //vong lap vo han
+   {
+      Y=0X00; //ban dau tat het
+      OUTPUT_D(Y); //8 bit thap
+      OUTPUT_C(Y>>8); //8 bit cao
+      DELAY_MS(500);
+      FOR(J=2;J>0;J--) //vong lap big de thuc hien 2 lan
+      {
+         Y=0X00;
+         OUTPUT_D(Y);
+         OUTPUT_C(Y>>8);
+         DELAY_MS(500);
+         FOR(I=7;I>0;I--) //vong lap small de moi lan chi sang 2 led
+         {
+            Y=(Y<<2|0X0003); //moi lan sang 2 led 0030 la 0000 0000 0000 0011
+            OUTPUT_D(Y);
+            OUTPUT_C(Y>>8);
+            DELAY_MS(500);
+         }
+      }
+   }
+}
+ 
