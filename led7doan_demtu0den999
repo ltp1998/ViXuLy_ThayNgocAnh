@@ -1,0 +1,40 @@
+#INCLUDE <TV_16F887.C>
+UNSIGNED INT8 DEM,TR,CH,DV;
+VOID GIAI_MA()
+{
+   DV=MA7DOAN[DEM%10];
+   CH=MA7DOAN[DEM/10%10];
+   TR=MA7DOAN[DEM/100];
+   IF(TR==0XC0)
+   {
+      TR=0XFF;
+      IF(CH==0XC0)
+      CH=0XFF;
+   }
+}
+VOID HIEN_THI()
+{
+   OUTPUT_B(DV);
+   OUTPUT_C(CH);
+   OUTPUT_D(TR);
+}
+VOID MAIN()
+{
+   SET_TRIS_B(0X00);
+   SET_TRIS_C(0X00);
+   SET_TRIS_D(0X00);
+   WHILE(TRUE)
+   {
+      DEM=0X00;
+      GIAI_MA();
+      HIEN_THI();
+      DELAY_MS(100);
+      WHILE(DEM<999)
+      {
+         DEM++;
+         GIAI_MA();
+         HIEN_THI();
+         DELAY_MS(100);
+      }
+   }
+}
