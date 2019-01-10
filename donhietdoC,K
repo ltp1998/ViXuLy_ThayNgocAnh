@@ -1,0 +1,124 @@
+#INCLUDE <TV_16F887.C>
+#INCLUDE <TV_LCD.C>
+#DEFINE CDOI PIN_B0
+UNSIGNED INT16 KQ_ADC_0,KQ_ADC_1; 
+UNSIGNED INT8 I, DV_0,CH_0,DV_1,CH_1;
+INT1 TT_CDOI;
+
+VOID GM_LCD()
+{
+   DV_0 = KQ_ADC_0%10 + 0X30;
+   CH_0 = KQ_ADC_0/10%10 + 0X30;
+   
+   DV_1 = KQ_ADC_1%10 + 0X30;
+   CH_1 = KQ_ADC_1/10%10 + 0X30;
+}
+
+VOID HT_LCD_C()
+{
+   LCD_COMMAND(0X80);
+   LCD_DATA("KENH 1=");
+   LCD_DATA(DV_0);
+   LCD_DATA(CH_0);
+   LCD_DATA(" DO C");
+   
+   LCD_COMMAND(0XC0);
+   LCD_DATA("KENH 2=");
+   LCD_DATA(DV_1);
+   LCD_DATA(CH_1);
+   LCD_DATA(" DO C");
+}
+
+VOID HT_LCD_K()
+{
+   LCD_COMMAND(0X80);
+   LCD_DATA("KENH 1=");
+   LCD_DATA((KQ_ADC_0+273)/100+0X30);
+   LCD_DATA((KQ_ADC_0+273)/10%10+0X30);
+   LCD_DATA((KQ_ADC_0+273)%10+0X30);
+   LCD_DATA(" DO K");
+   
+   LCD_COMMAND(0XC0);
+   LCD_DATA("KENH 2=");
+   LCD_DATA((KQ_ADC_1+273)/100+0X30);
+   LCD_DATA((KQ_ADC_1+273)/10%10+0X30);
+   LCD_DATA((KQ_ADC_1+273)%10+0X30);
+   LCD_DATA(" DO K");   
+}
+
+
+VOID XOA_LCD()
+{
+   LCD_COMMAND(0X87);
+   FOR(I=0;I<9;I++) LCD_DATA(' ');
+   LCD_COMMAND(0XC7);
+   FOR(I=0;I<9;I++) LCD_DATA(' ');
+}
+
+VOID CD_CDOI()
+{
+   IF(!INPUT(CDOI))
+   {
+      DELAY_MS(20);
+      IF(!INPUT(CDOI))
+      {
+         TT_CDOI =~ TT_CDOI;
+         XOA_LCD();
+         WHILE(!INPUT(CDOI));
+      }
+   }
+}
+
+VOID DOC_ADC_0()
+{
+   SET_ADC_CHANNEL(0);
+   DELAY_MS(1);
+   KQ_ADC_0=0;
+   FOR(I=0;I<100;I++)
+   {
+      KQ_ADC_0 = KQ_ADC_0 + READ_ADC();
+      DELAY_MS(1);
+   }
+   KQ_ADC_0 = KQ_ADC_0/100/2.046;
+}
+
+VOID DOC_ADC_1()
+{
+   SET_ADC_CHANNEL(1);
+   DELAY_MS(1);
+   KQ_ADC_1=0;
+   FOR(I=0;I<100;I++)
+   {
+      KQ_ADC_1 = KQ_ADC_1 + READ_ADC();
+      DELAY_MS(1);
+   }
+   KQ_ADC_1 = KQ_ADC_1/100/2.046;
+}
+
+VOID MAIN()
+{
+   SET_TRIS_D(0X00);
+   SET_TRIS_E(0X00);
+   SET_TRIS_B(0XFF);
+   
+   LCD_SETUP();
+   SETUP_ADC(ADC_CLOCK_DIV_32);
+   SETUP_ADC_PORTS(sAN0|sAN1|VSS_VDD);
+   
+   DOC_ADC_0();
+   DOC_ADC_1();
+   GM_LCD();
+   HT_LCD_C();
+   TT_CDOI=0;
+   
+   WHILE(TRUE)
+   {
+      DOC_ADC_0();
+      DOC_ADC_1();
+      GM_LCD();
+      
+      CD_CDOI();
+      IF(TT_CDOI==0) HT_LCD_C();
+      ELSE HT_LCD_K();
+   }
+}
