@@ -1,0 +1,84 @@
+#VDK TRUNG TAM
+#INCLUDE <TV_16F887.C>
+#USE RS232(BAUD=4800,XMIT=PIN_C6,RCV=PIN_C7)
+#DEFINE MODE PIN_E0
+UNSIGNED INT8 TT_MODE,I,J;
+
+VOID KT_MODE()
+{
+   IF(INPUT(MODE)==0)
+   {
+      DELAY_MS(20);
+      IF(INPUT(MODE)==0)
+      {
+         TT_MODE++;
+         IF(TT_MODE == 4) TT_MODE = 1;
+         WHILE(INPUT(MODE)==0);
+      }
+   }
+}
+
+VOID MAIN()
+{
+   SET_TRIS_E(0XFF);
+   TT_MODE=1;
+   WHILE(TRUE)
+   {
+      KT_MODE();
+      IF(MODE==2)
+      {
+         FOR(I=0;I<4;I++)
+         {
+            PUTC(I);
+            FOR(J=0;J<20;J++)
+            {
+               KT_MODE(); DELAY_MS(100);
+            }
+         }
+      }
+      IF(MODE==3)
+      {
+         PUTC('T');
+      }
+   }
+}
+
+#VDK TRAM
+#INCLUDE <TV_16F887.C>
+#USE RS232(BAUD=4800,XMIT=PIN_C6,RCV=PIN_C7)
+UNSIGNED INT8 DL_NHAN,TT_SS;
+
+#INT_RDA
+VOID NGAT_UART()
+{
+   DL_NHAN=GETCH();
+   IF(DL_NHAN==0) OUTPUT_D(0X00);
+   IF(DL_NHAN==1) OUTPUT_D(0X01);
+   IF(DL_NHAN==2) OUTPUT_D(0X02);
+   IF(DL_NHAN==3) OUTPUT_D(0X04);
+   IF(DL_NHAN=='T') 
+   {
+      TT_SS= 1;
+   }
+   ELSE TT_SS=0;
+}
+VOID MAIN()
+{
+   SET_TRIS_D(0X00);
+   SET_TRIS_B(0X00);
+   OUTPUT_D(0X3C);
+   DELAY_MS(2000);
+   OUTPUT_D(0X00);
+   ENABLE_INTERRUPTS(GLOBAL);
+   DISABLE_INTERRUPTS(INT_RDA);
+   WHILE(TRUE)
+   {
+      IF(TT_SS==1);
+      {
+         OUTPUT_D(0XFF);
+         DELAY_MS(1000);
+         OUTPUT_D(0X00);
+         DELAY_MS(1000);
+      }
+   }
+}
