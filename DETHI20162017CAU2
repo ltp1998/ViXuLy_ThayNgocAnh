@@ -1,0 +1,171 @@
+//TOM TAT DE BAI
+//1 NUT NHAN CDOI DO C VA DO K - RB0
+
+//CAU TRUC CHUONG TRINH C
+//KHAI BAO THU VIEN
+#INCLUDE <TV_16F887.C>
+#INCLUDE <TV_LCD.C>
+
+//DINH NGHIA NUT NHAN
+#DEFINE CDOI PIN_B0
+
+//KHAI BAO BIEN
+UNSIGNED INT16 KQ_ADC_0, GT_CAI=45;
+UNSIGNED INT8 I, DV_0, CH_0, DV_1, CH_1;
+INT1 TT_CDOI,TT_SS;
+
+//VIET HAM NGAT
+//VIET HAM CON
+VOID GM_LCD()
+{
+   DV_0 = KQ_ADC_0%10 + 0X30;
+   CH_0 = KQ_ADC_0/10 + 0X30;
+   
+   DV_1 = GT_CAI%10 + 0X30;
+   CH_1 = GT_CAI/10 + 0X30;
+}
+
+VOID HT_LCD()
+{
+   //DOC DE
+   //XAC DINH VI TRI + GUI DU LIEU
+   LCD_COMMAND(0X80);   //DAU HANG 1
+   LCD_DATA("KENH 0= ");
+   LCD_DATA(CH_0);
+   LCD_DATA(DV_0);
+   LCD_DATA(" do C");
+   
+   LCD_COMMAND(0XC0);   //DAU HANG 2
+   LCD_DATA("KENH 1= ");
+   LCD_DATA(CH_1);
+   LCD_DATA(DV_1);
+   LCD_DATA(" do C");
+}
+
+VOID HT_LCD_K()
+{
+   //DOC DE
+   //XAC DINH VI TRI + GUI DU LIEU
+   LCD_COMMAND(0X80);   //DAU HANG 1
+   LCD_DATA("KENH 0= ");
+   LCD_DATA((KQ_ADC_0+273)/100+0X30);
+   LCD_DATA((KQ_ADC_0+273)/10%10+0X30);
+   LCD_DATA((KQ_ADC_0+273)%10+0X30);
+   LCD_DATA(" do K");
+   
+   LCD_COMMAND(0XC0);   //DAU HANG 2
+   LCD_DATA("KENH 1= ");
+   LCD_DATA((GT_CAI+273)/100+0X30);
+   LCD_DATA((GT_CAI+273)/10%10+0X30);
+   LCD_DATA((GT_CAI+273)%10+0X30);
+   LCD_DATA(" do K");
+}
+
+VOID DOC_ADC_0()
+{
+   SET_ADC_CHANNEL(0);
+   DELAY_MS(1);
+   KQ_ADC_0 = 0;
+   FOR(I=0; I<100; I++)
+   {
+      KQ_ADC_0 = KQ_ADC_0 + READ_ADC();
+      DELAY_MS(1);
+   }
+   KQ_ADC_0 = KQ_ADC_0/100/2.046;
+}
+
+VOID XOA_LCD()
+{
+   LCD_COMMAND(0X87);
+   FOR(I=0; I<9; I++) LCD_DATA(' ');
+   LCD_COMMAND(0XC7);
+   FOR(I=0; I<9; I++) LCD_DATA(' ');
+}
+
+
+VOID CD_CDOI()
+{
+   IF(!INPUT(CDOI))
+   {
+      DELAY_MS(20);
+      IF(!INPUT(CDOI))
+      {
+         //XU LY CHUC NANG
+         TT_CDOI = ~TT_CDOI;
+         XOA_LCD();
+         //CHO NHA
+         WHILE(!INPUT(CDOI));
+      }
+   }
+}
+
+
+//VIET HAM CHINH
+VOID MAIN()
+{
+   //KHOI TAO PORT
+   SET_TRIS_E(0X00);
+   SET_TRIS_D(0X00);
+   SET_TRIS_B(0X01); //0XFF
+   
+   //KHOI TAO CAC MODULE
+   //LCD
+   LCD_SETUP();      //TRONG THU VIEN
+   
+   //ADC
+   SETUP_ADC(ADC_CLOCK_DIV_32);
+   SETUP_ADC_PORTS(sAN0 | VSS_VDD);
+   
+   //TRANG THAI BAN DAU CUA HE THONG 
+   DOC_ADC_0();
+   GM_LCD();
+   HT_LCD();
+   
+   TT_CDOI = 0;   //DO C
+   
+   //VONG LAP TUAN HOAN
+   WHILE(TRUE)
+   {
+      //DOC DE
+      DOC_ADC_0();
+      GM_LCD();
+      
+      CD_CDOI();
+      IF(TT_CDOI == 0) HT_LCD();
+      ELSE HT_LCD_K();
+      IF(KQ_ADC_0>=GT_CAI)
+      {
+         TT_SS=1;
+         OUTPUT_HIGH(PIN_C0);
+         IF(TT_CDOI ==0)
+         {
+            LCD_COMMAND(0X88);   //DAU HANG 1
+            LCD_DATA(' ');
+            LCD_DATA(' ');
+            DELAY_MS(500);
+            LCD_COMMAND(0X88);   //DAU HANG 1
+            LCD_DATA(CH_0);
+            LCD_DATA(DV_0);
+            DELAY_MS(500);
+         }
+         ELSE
+         {
+            LCD_COMMAND(0X88);   //DAU HANG 1
+            LCD_DATA(' ');
+            LCD_DATA(' ');
+            LCD_DATA(' ');
+            DELAY_MS(500);
+            LCD_COMMAND(0X88);   //DAU HANG 1
+            LCD_DATA((KQ_ADC_0+273)/100+0X30);
+            LCD_DATA((KQ_ADC_0+273)/10%10+0X30);
+            LCD_DATA((KQ_ADC_0+273)%10+0X30);
+            DELAY_MS(500);
+         }
+      }
+      ELSE
+      {
+         TT_SS=0;
+         OUTPUT_LOW(PIN_C0);
+      }
+   }
+}
